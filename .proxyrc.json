@@ -1,0 +1,10 @@
+{
+	"port" : 8000,
+	"replaces" : [
+		{
+			"pattern" : "//localhost:8080/svc/",
+			"replacement" : "//localhost:9090/svc/",
+			"disabled" : false
+		}
+	]
+}
