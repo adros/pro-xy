@@ -1,7 +1,6 @@
 var httpProxy = require("http-proxy");
 var http = require("http");
 var fs = require("fs");
-var url = require("url");
 
 var configLocations = [
 	"./.proxyrc.json",
@@ -11,24 +10,35 @@ var configLocations = [
 function startProxy() {
 
 	var config = loadConfig();
+	var plugins = loadPlugins(config);
 	if (!config) {
 		console.error("Config not found");
 		process.exit(1);
 	}
 	var proxy = httpProxy.createProxyServer({});
 	var server = http.createServer(function(req, res) {
-		config.replaces.forEach(function(replace) {
+		var endProcessing = plugins.some(function(plugin) {
+			return plugin(config, req, res); //if plugin returns true, it means it processed request, do not continue
+		});
+		if (endProcessing) {
+			return;
+		}
+		(config.replaces || []).forEach(function(replace) {
 			if (!replace.disabled) {
 				req.url = req.url.replace(replace.pattern, replace.replacement);
 			}
 		});
-		console.log(req.url);
-		console.log(getHost(req.url));
 		proxy.web(req, res, {
-			target: getHost(req.url)
+			target: req.url,
+			//WARNING! toProxy and prependPath options are used to avoid url.parse
+			//used by http-proxy, because it would escape some characters, eg. |
+			//https://github.com/nodejitsu/node-http-proxy/issues/725
+			//req.url on target server now returns full url instead of just path, is this ok?
+			toProxy: true,
+			prependPath: false
 		});
 	});
-	server.listen(config.part);
+	server.listen(config.port);
 }
 
 function loadConfig() {
@@ -42,9 +52,10 @@ function loadConfig() {
 	return config;
 }
 
-function getHost(targetUrl) {
-	var parsedUrl = url.parse(targetUrl);
-	return parsedUrl.protocol + "//" + parsedUrl.host;
+function loadPlugins(config) {
+	return (config.plugins || []).map(function(plugin) {
+		return require(plugin);
+	});
 }
 
 if (require.main == module) {
