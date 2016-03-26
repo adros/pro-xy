@@ -7,7 +7,7 @@ var configLocations = [
 	"~/.proxyrc.json"
 ];
 
-function startProxy() {
+function startProxy(replaceName) {
 
 	var config = loadConfig();
 	var plugins = loadPlugins(config);
@@ -24,7 +24,11 @@ function startProxy() {
 			return;
 		}
 		(config.replaces || []).forEach(function(replace) {
-			if (!replace.disabled) {
+			if (replaceName && replaceName == replace.name) {
+				req.url = req.url.replace(replace.pattern, replace.replacement);
+				return;
+			}
+			if (!replaceName && !replace.disabled) {
 				req.url = req.url.replace(replace.pattern, replace.replacement);
 			}
 		});
@@ -60,7 +64,13 @@ function loadPlugins(config) {
 
 if (require.main == module) {
 	//launched from command line, start proxy now
-	startProxy();
+	var replaceName = process.argv[2];
+	if (replaceName == "-h") {
+		console.log("Usage: node proxy.js [replaceName]");
+		system.exit(0);
+	}
+	console.log(replaceName);
+	startProxy(replaceName);
 } else {
 	//required from another module, just export function
 	exports.startProxy = startProxy;

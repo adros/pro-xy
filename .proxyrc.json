@@ -2,6 +2,7 @@
 	"port" : 8000,
 	"replaces" : [
 		{
+			"name" : "9090",
 			"pattern" : "//localhost:8080/svc/",
 			"replacement" : "//localhost:9090/svc/",
 			"disabled" : false
