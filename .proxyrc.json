@@ -9,12 +9,19 @@
 		}
 	],
 	"plugins" : [
-		"cookie-replacer"
+		"cookie-replacer",
+		"auto-responder"
 	],
 	"cookie-replacer" : [
 		{
 			"pattern" : "test",
 			"replacement" : "_test"
+		}
+	],
+	"auto-responder" : [
+		{
+			"test" : "/svc/",
+			"target" : "b.js"
 		}
 	]
 }
