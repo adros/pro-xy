@@ -25,11 +25,11 @@ function startProxy(replaceName) {
 		}
 		(config.replaces || []).forEach(function(replace) {
 			if (replaceName && replaceName == replace.name) {
-				req.url = req.url.replace(replace.pattern, replace.replacement);
+				req.url = req.url.replace(new RegExp(replace.pattern), replace.replacement);
 				return;
 			}
 			if (!replaceName && !replace.disabled) {
-				req.url = req.url.replace(replace.pattern, replace.replacement);
+				req.url = req.url.replace(new RegExp(replace.pattern), replace.replacement);
 			}
 		});
 		proxy.web(req, res, {
@@ -67,7 +67,7 @@ if (require.main == module) {
 	var replaceName = process.argv[2];
 	if (replaceName == "-h") {
 		console.log("Usage: node proxy.js [replaceName]");
-		system.exit(0);
+		process.exit(0);
 	}
 	console.log(replaceName);
 	startProxy(replaceName);
