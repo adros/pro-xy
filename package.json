@@ -6,11 +6,12 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "",
   "license": "ISC",
   "bin" : {
 	  "url-replace" : "./bin/url-replace.js"
   },
+  "repository": "https://github.com/zboro/url-replace.git",
+  "author": "zboron.lukas@gmail.com",
   "dependencies": {
     "http-proxy": "^1.13.2"
   }
