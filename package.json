@@ -1,6 +1,6 @@
 {
-  "name": "url-replace-2",
-  "version": "0.0.0",
+  "name": "url-replace",
+  "version": "0.0.1",
   "description": "Node proxy for redirecting selected http calls to different hosts.",
   "main": "proxy.js",
   "scripts": {
@@ -8,6 +8,9 @@
   },
   "author": "",
   "license": "ISC",
+  "bin" : {
+	  "url-replace" : "./bin/url-replace.js"
+  },
   "dependencies": {
     "http-proxy": "^1.13.2"
   }

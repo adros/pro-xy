@@ -4,13 +4,13 @@ var fs = require("fs");
 
 var configLocations = [
 	"./.proxyrc.json",
-	"~/.proxyrc.json"
+	process.env.HOME + "/.proxyrc.json"
 ];
 
-function startProxy(replaceName) {
+var config = loadConfig();
+var plugins = loadPlugins(config);
 
-	var config = loadConfig();
-	var plugins = loadPlugins(config);
+function startProxy(replaceName) {
 	if (!config) {
 		console.error("Config not found");
 		process.exit(1);
@@ -40,6 +40,10 @@ function startProxy(replaceName) {
 			//req.url on target server now returns full url instead of just path, is this ok?
 			toProxy: true,
 			prependPath: false
+		}, function(e) {
+			console.error(e.message);
+			res.status = 502;
+			res.end(e.message);
 		});
 	});
 	server.listen(config.port);
@@ -53,6 +57,18 @@ function loadConfig() {
 			return true;
 		}
 	});
+	if (!config) {
+		console.error("Failed to load config");
+		process.exit(1);
+	}
+	return config;
+}
+
+function reloadConfig() {
+	config = loadConfig();
+}
+
+function getConfig() {
 	return config;
 }
 
@@ -62,16 +78,6 @@ function loadPlugins(config) {
 	});
 }
 
-if (require.main == module) {
-	//launched from command line, start proxy now
-	var replaceName = process.argv[2];
-	if (replaceName == "-h") {
-		console.log("Usage: node proxy.js [replaceName]");
-		system.exit(0);
-	}
-	console.log(replaceName);
-	startProxy(replaceName);
-} else {
-	//required from another module, just export function
-	exports.startProxy = startProxy;
-}
+exports.startProxy = startProxy;
+exports.reloadConfig = reloadConfig;
+exports.getConfig = getConfig;
