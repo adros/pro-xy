@@ -9,6 +9,7 @@ var configLocations = [
 
 var config = loadConfig();
 var plugins = loadPlugins(config);
+var server;
 
 function startProxy(replaceName) {
 	if (!config) {
@@ -16,7 +17,10 @@ function startProxy(replaceName) {
 		process.exit(1);
 	}
 	var proxy = httpProxy.createProxyServer({});
-	var server = http.createServer(function(req, res) {
+	if (server) {
+		stopProxy();
+	}
+	server = http.createServer(function(req, res) {
 		var endProcessing = plugins.some(function(plugin) {
 			return plugin(config, req, res); //if plugin returns true, it means it processed request, do not continue
 		});
@@ -32,6 +36,7 @@ function startProxy(replaceName) {
 				req.url = req.url.replace(new RegExp(replace.pattern), replace.replacement);
 			}
 		});
+		// console.log(req.url);
 		proxy.web(req, res, {
 			target: req.url,
 			//WARNING! toProxy and prependPath options are used to avoid url.parse
@@ -64,6 +69,11 @@ function loadConfig() {
 	return config;
 }
 
+function stopProxy() {
+	server.close();
+	server = null;
+}
+
 function reloadConfig() {
 	config = loadConfig();
 }
@@ -78,6 +88,9 @@ function loadPlugins(config) {
 	});
 }
 
-exports.startProxy = startProxy;
-exports.reloadConfig = reloadConfig;
-exports.getConfig = getConfig;
+module.exports = {
+	startProxy: startProxy,
+	stopProxy: stopProxy,
+	reloadConfig: reloadConfig,
+	getConfig: getConfig
+};
