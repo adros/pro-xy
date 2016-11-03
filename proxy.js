@@ -3,6 +3,8 @@ var http = require("http");
 var fs = require("fs");
 var path = require("path");
 var EventEmitter = require("events");
+var _ = require("lodash");
+var logger = require("log4js").getLogger("pro-xy");
 
 var CONFIG_LOCATION = path.join(process.env.HOME, ".proxyrc.json");
 var DEFAULT_PORT = 8000;
@@ -10,19 +12,19 @@ var DEFAULT_PORT = 8000;
 var httpServer, config;
 
 var proxy = module.exports = Object.assign(new EventEmitter(), {
-	start: startProxy,
-	stop: stopProxy,
-	setConfig: setConfig,
-	getConfig: getConfig
+	start,
+	stop,
+	setConfig,
+	getConfig
 });
 
 proxy.setConfig(loadConfig(), true);
 var plugins = loadPlugins(config);
 
-function startProxy() {
+function start() {
 	var proxyServer = httpProxy.createProxyServer({});
 	if (httpServer) {
-		stopProxy();
+		stop();
 	}
 	httpServer = http.createServer(function(req, res) {
 		var endProcessing = plugins.some(plugin => plugin(config, req, res));
@@ -39,21 +41,21 @@ function startProxy() {
 			toProxy: true,
 			prependPath: false
 		}, function(e) {
-			console.error(e.message);
+			logger.error(e.message);
 			res.status = 502;
 			res.end(e.message);
 		});
 	});
 	httpServer.listen(config.port);
-	console.log("Proxy server started on port", config.port);
+	logger.info("Proxy server started on port", config.port);
 	proxy.emit("serverstarted", httpServer, proxyServer);
 }
 
-function stopProxy() {
+function stop() {
 	httpServer.close();
 	proxy.emit("serverstopped", httpServer);
 	httpServer = null;
-	console.log("Proxy server stopped.");
+	logger.info("Proxy server stopped.");
 }
 
 function loadConfig() {
@@ -66,6 +68,9 @@ function loadConfig() {
 }
 
 function setConfig(newConfig, noWrite) {
+	newConfig = _.cloneDeep(newConfig);
+
+	logger.debug("Setting config", newConfig);
 	var oldPort = config && config.port;
 
 	config = Object.assign({
@@ -73,27 +78,31 @@ function setConfig(newConfig, noWrite) {
 	}, newConfig);
 
 	if (!noWrite) {
-		fs.writeFileSync(CONFIG_LOCATION, JSON.stringify(newConfig, null, "\t"));
+		fs.writeFileSync(CONFIG_LOCATION, JSON.stringify(config, null, "\t"));
+		logger.debug(`Config written to ${CONFIG_LOCATION}`);
 	}
 
 	proxy.emit("configupdated", config);
 
 	if (oldPort && oldPort != config.port) { //only if port has chaged we need to restart
+		logger.info(`Restarting due to port change from ${oldPort} to ${config.port}`);
 		proxy.stop();
 		proxy.start();
 	}
+	logger.trace("Config set done");
 }
 
 function getConfig() {
-	return config;
+	return _.cloneDeep(config);
 }
 
 function loadPlugins(config) {
 	return (config.plugins || [])
 	.map(plugin => {
-		console.log(`Loading plugin "${plugin}"`);
+		logger.debug(`Loading plugin "${plugin}"`);
 		var pluginModule = require(plugin);
 		if (pluginModule.init) {
+			logger.debug(`Initializing plugin "${plugin}"`);
 			pluginModule.init(proxy);
 		}
 		return pluginModule.exec || (typeof pluginModule == "function" ? pluginModule : null);
