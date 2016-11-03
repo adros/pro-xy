@@ -1,48 +1,41 @@
 var httpProxy = require("http-proxy");
 var http = require("http");
 var fs = require("fs");
+var path = require("path");
+var EventEmitter = require("events");
 
-var configLocations = [
-	"./.proxyrc.json",
-	process.env.HOME + "/.proxyrc.json"
-];
+var CONFIG_LOCATION = path.join(process.env.HOME, ".proxyrc.json");
+var DEFAULT_PORT = 8000;
 
-var config = loadConfig();
+var httpServer, config;
+
+var proxy = module.exports = Object.assign(new EventEmitter(), {
+	start: startProxy,
+	stop: stopProxy,
+	setConfig: setConfig,
+	getConfig: getConfig
+});
+
+proxy.setConfig(loadConfig(), true);
 var plugins = loadPlugins(config);
-var server;
 
-function startProxy(replaceName) {
-	if (!config) {
-		console.error("Config not found");
-		process.exit(1);
-	}
-	var proxy = httpProxy.createProxyServer({});
-	if (server) {
+function startProxy() {
+	var proxyServer = httpProxy.createProxyServer({});
+	if (httpServer) {
 		stopProxy();
 	}
-	server = http.createServer(function(req, res) {
-		var endProcessing = plugins.some(function(plugin) {
-			return plugin(config, req, res); //if plugin returns true, it means it processed request, do not continue
-		});
+	httpServer = http.createServer(function(req, res) {
+		var endProcessing = plugins.some(plugin => plugin(config, req, res));
 		if (endProcessing) {
-			return;
+			return; //if plugin returns true, it means it processed request, do not continue
 		}
-		(config.replaces || []).forEach(function(replace) {
-			if (replaceName && replaceName == replace.name) {
-				req.url = req.url.replace(new RegExp(replace.pattern), replace.replacement);
-				return;
-			}
-			if (!replaceName && !replace.disabled) {
-				req.url = req.url.replace(new RegExp(replace.pattern), replace.replacement);
-			}
-		});
-		// console.log(req.url);
-		proxy.web(req, res, {
+
+		proxyServer.web(req, res, {
 			target: req.url,
 			//WARNING! toProxy and prependPath options are used to avoid url.parse
 			//used by http-proxy, because it would escape some characters, eg. |
 			//https://github.com/nodejitsu/node-http-proxy/issues/725
-			//req.url on target server now returns full url instead of just path, is this ok?
+			//req.url on target server now returns full url instead of just path
 			toProxy: true,
 			prependPath: false
 		}, function(e) {
@@ -51,31 +44,44 @@ function startProxy(replaceName) {
 			res.end(e.message);
 		});
 	});
-	server.listen(config.port);
-}
-
-function loadConfig() {
-	var config;
-	configLocations.some(function(location) {
-		if (fs.existsSync(location)) {
-			config = JSON.parse(fs.readFileSync(location, "utf-8"));
-			return true;
-		}
-	});
-	if (!config) {
-		console.error("Failed to load config");
-		process.exit(1);
-	}
-	return config;
+	httpServer.listen(config.port);
+	console.log("Proxy server started on port", config.port);
+	proxy.emit("serverstarted", httpServer, proxyServer);
 }
 
 function stopProxy() {
-	server.close();
-	server = null;
+	httpServer.close();
+	proxy.emit("serverstopped", httpServer);
+	httpServer = null;
+	console.log("Proxy server stopped.");
 }
 
-function reloadConfig() {
-	config = loadConfig();
+function loadConfig() {
+	if (!fs.existsSync(CONFIG_LOCATION)) {
+		fs.writeFileSync(CONFIG_LOCATION, "{}");
+		return {};
+	}
+
+	return JSON.parse(fs.readFileSync(CONFIG_LOCATION, "utf-8"));
+}
+
+function setConfig(newConfig, noWrite) {
+	var oldPort = config && config.port;
+
+	config = Object.assign({
+		port: DEFAULT_PORT
+	}, newConfig);
+
+	if (!noWrite) {
+		fs.writeFileSync(CONFIG_LOCATION, JSON.stringify(newConfig, null, "\t"));
+	}
+
+	proxy.emit("configupdated", config);
+
+	if (oldPort && oldPort != config.port) { //only if port has chaged we need to restart
+		proxy.stop();
+		proxy.start();
+	}
 }
 
 function getConfig() {
@@ -83,14 +89,14 @@ function getConfig() {
 }
 
 function loadPlugins(config) {
-	return (config.plugins || []).map(function(plugin) {
-		return require(plugin);
-	});
+	return (config.plugins || [])
+	.map(plugin => {
+		console.log(`Loading plugin "${plugin}"`);
+		var pluginModule = require(plugin);
+		if (pluginModule.init) {
+			pluginModule.init(proxy);
+		}
+		return pluginModule.exec || (typeof pluginModule == "function" ? pluginModule : null);
+	})
+	.filter(execFn => !!execFn);
 }
-
-module.exports = {
-	startProxy: startProxy,
-	stopProxy: stopProxy,
-	reloadConfig: reloadConfig,
-	getConfig: getConfig
-};

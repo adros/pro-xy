@@ -1,23 +1,17 @@
-## url-replace
-
-Simple http proxy for redirecting requests to alternative URL.
-
-It can be used during development to redirect selected URLs (e.g. XHR requests) to another server (e.g. test/production server)
-without making cross-origin calls.
+# pro-xy
+Simple pluggable http proxy.
 
 It also allows to define plugins, that can change request or response in any other way.
 
 ## Usage
 
 1. Install
-		npm install -g url-replace
+		npm install -g pro-xy
 
-2. Create config file. Config file is single JSON file named .proxyrc.json. It can be placed in your home folder or in current folder. See below for config format.
+2. Run.
+		pro-xy
 
-3. Run.
-		url-replace
-
-Alternatively url-replace can also be required from another module and launched be calling *startProxy* method.
+Alternatively pro-xy can also be required from another module and launched be calling *start* method.
 
 ## Config file
 
@@ -25,7 +19,25 @@ Sample:
 
 	{
 		"port" : 8000,
-		"replaces" : [
+		"plugins" : [
+			"pro-xy-cookie-replacer",
+			"pro-xy-auto-responder",
+			"pro-xy-url-replacer"
+		],
+		"pro-xy-cookie-replacer" : [
+			{
+				"urlPattern" : ".*",
+				"pattern" : "test",
+				"replacement" : "_test"
+			}
+		],
+		"pro-xy-auto-responder" : [
+			{
+				"test" : "/svc/users",
+				"target" : "users.json"
+			}
+		],		
+		"pro-xy-url-replacer" : [
 			{
 				"name" : "test9090",
 				"pattern" : "//localhost:8080/svc/",
@@ -33,23 +45,6 @@ Sample:
 				"disabled" : false
 			}
 		],
-		"plugins" : [
-			"cookie-replacer",
-			"auto-responder"
-		],
-		"cookie-replacer" : [
-			{
-				"urlPattern" : ".*",
-				"pattern" : "test",
-				"replacement" : "_test"
-			}
-		],
-		"auto-responder" : [
-			{
-				"test" : "/svc/users",
-				"target" : "users.json"
-			}
-		]
 	}
 
 This sample file defines single replace, that will cause that all requests to "//localhost:8080/svc/*" will not go to the localhost. Instead they will be redirected to "//testserver.company.com:9090/svc/*". The rest of URL is left unchanged.
