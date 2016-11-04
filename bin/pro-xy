@@ -1,4 +1,4 @@
 #!/usr/bin/env node
 
-var proxy = require("../proxy");
+var proxy = require("../lib/proxy");
 proxy.start();

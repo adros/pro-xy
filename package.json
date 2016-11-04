@@ -1,20 +1,21 @@
 {
-  "name": "pro-xy",
-  "version": "0.1.0",
-  "description": "Pluggable node proxy",
-  "main": "proxy.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "license": "ISC",
-  "bin": {
-    "pro-xy": "./bin/pro-xy"
-  },
-  "repository": "https://github.com/adros/pro-xy.git",
-  "author": "zboron.lukas@gmail.com",
-  "dependencies": {
-    "http-proxy": "^1.13.2",
-    "lodash": "^4.16.6",
-    "log4js": "^0.6.38"
-  }
+    "name": "pro-xy",
+    "version": "0.1.0",
+    "description": "Pluggable node proxy",
+    "main": "lib/proxy.js",
+    "scripts": {
+        "postinstall": "scripts/install.js",
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "license": "ISC",
+    "bin": {
+        "pro-xy": "./bin/pro-xy"
+    },
+    "repository": "https://github.com/adros/pro-xy.git",
+    "author": "zboron.lukas@gmail.com",
+    "dependencies": {
+        "http-proxy": "^1.13.2",
+        "lodash": "^4.16.6",
+        "log4js": "^0.6.38"
+    }
 }
