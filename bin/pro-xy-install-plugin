@@ -1,7 +1,0 @@
-#!/bin/bash
-
-current="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-echo "Currebt ${current}"
-pushd "$current" > /dev/null
-npm install
-popd > /dev/null
