@@ -1,14 +1,15 @@
 # pro-xy
-Simple pluggable http proxy.
 
-It also allows to define plugins, that can change request or response in any other way.
+Simple pluggable http proxy, which allows to define plugins, that can change request or response.
 
 ## Usage
 
 1. Install
+
 		npm install -g pro-xy
 
 2. Run.
+
 		pro-xy
 
 Alternatively pro-xy can also be required from another module and launched be calling *start* method.
@@ -17,53 +18,70 @@ Alternatively pro-xy can also be required from another module and launched be ca
 
 Sample:
 
-	{
-		"port" : 8000,
-		"plugins" : [
-			"pro-xy-cookie-replacer",
-			"pro-xy-auto-responder",
-			"pro-xy-url-replacer"
-		],
-		"pro-xy-cookie-replacer" : [
-			{
-				"urlPattern" : ".*",
-				"pattern" : "test",
-				"replacement" : "_test"
-			}
-		],
-		"pro-xy-auto-responder" : [
-			{
-				"test" : "/svc/users",
-				"target" : "users.json"
-			}
-		],		
-		"pro-xy-url-replacer" : [
-			{
-				"name" : "test9090",
-				"pattern" : "//localhost:8080/svc/",
-				"replacement" : "//testserver.company.com:9090/svc/",
-				"disabled" : false
-			}
-		],
+```
+{
+	"port": 8000,
+	"logLevel": "DEBUG",
+	"plugins": [
+		"pro-xy-url-replace",
+		"pro-xy-header-replace",
+		"pro-xy-cookie-replace",
+		"pro-xy-auto-responder"
+	],
+	"pro-xy-url-replace": {
+		"disabled": false,
+		"replaces": [],
+		"replaceBackHeaders": [
+			"location",
+			"link"
+		]
+	},
+	"pro-xy-auto-responder": {
+		"disabled": true,
+		"responses": []
+	},
+	"pro-xy-cookie-replace" : {
+		"disabled": true,
+		"replaces": []
+	},
+	"pro-xy-header-replace":{
+		"disabled": true,
+		"replaces": []
 	}
+}
 
-This sample file defines single replace, that will cause that all requests to "//localhost:8080/svc/*" will not go to the localhost. Instead they will be redirected to "//testserver.company.com:9090/svc/*". The rest of URL is left unchanged.
+This sample file defines port to start on, logging configuration and 4 plugins and their configuration.
 
-It also defines 2 plugins and their configs. See their docs for details.
-
-* **port** - port for proxy
-* **replace** - array of replaces to apply
-	* **name** - any string to identify replace, e.g. name of target environment
-	* **pattern** - RegExp to match in request URLs
-	* **replacement** - string to replace matched part of request URL
-	* **disabled** - boolean used to temporarily disable replace, so that you can keep multiple replaces in a single config file and easily switch between them
-* **plugins** - list of plugins to use. Plugins are represented by name of their npm package and must be installed alongside url-replace to be used.
+- *port* - port for proxy
+- *plugins* - list of plugins to use. Plugins are represented by name of their npm package and must be installed alongside pro-xy module
 
 ## Plugins
 
-Plugins are npm packages with single function which receives config, request and response. If plugin returns truthy value, it means it has processed request completely and no following plugins and replaces will be applied.
+Plugins are npm modules which export function that will be called for each request and will receive *config*, *request* and *response*. If function truthy value, it means it has processed the request completely and no following plugins and replaces will be applied.
 
-	function(config, req, res) {
+	module.exports = function(config, req, res) {
 		//do something
 		return false;
-	}
+	};
+
+Instead of function plugin may export object with two methods *init* and *exec*, where exec should be same function as defined above and exec should be a function which will be called on pro-xy startup and will receive *pro-xy* instance an *log4js* logger instance for this pluggin,
+
+	var logger;
+	module.exports = {
+		init: function (_proxy, _logger) {
+			logger = _logger;
+		},
+		exec: function(config, req, res) {
+			//do something
+			//logger.trace(...)
+			return false;
+		}
+	};
+
+
+## Known plugins
+
+- [pro-xy-url-replace](https://github.com/adros/pro-xy-url-replace)
+- [pro-xy-header-replace](https://github.com/adros/pro-xy-header-replace)
+- [pro-xy-cookie-replace](https://github.com/adros/pro-xy-cookie-replace)
+- [pro-xy-auto-responder](https://github.com/adros/pro-xy-auto-responder)
