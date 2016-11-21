@@ -49,6 +49,7 @@ Sample:
 		"replaces": []
 	}
 }
+```
 
 This sample file defines port to start on, logging configuration and 4 plugins and their configuration.
 
