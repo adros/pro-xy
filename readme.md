@@ -86,3 +86,9 @@ Instead of function plugin may export object with two methods *init* and *exec*,
 - [pro-xy-header-replace](https://github.com/adros/pro-xy-header-replace)
 - [pro-xy-cookie-replace](https://github.com/adros/pro-xy-cookie-replace)
 - [pro-xy-auto-responder](https://github.com/adros/pro-xy-auto-responder)
+- [pro-xy-ws-api](https://github.com/adros/pro-xy-ws-api)
+- [pro-xy-delay](https://github.com/adros/pro-xy-delay)
+
+## User interface
+
+See [pro-xy-ui](https://github.com/adros/pro-xy-ui)
