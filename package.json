@@ -1,6 +1,6 @@
 {
   "name": "pro-xy",
-  "version": "0.1.15",
+  "version": "0.1.16",
   "description": "Pluggable node proxy",
   "main": "lib/proxy.js",
   "scripts": {
